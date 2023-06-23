@@ -16,11 +16,11 @@ export default function ForgetPass() {
         try {
             const formdata: any = Object.fromEntries(new FormData(e.target))
             if (formdata?.password.length < 8 || formdata?.confirm_password.length < 8) {
-                setLoading({ loading: false, message: "Password tidak boleh kurang dari 8 karakter" })
+                setLoading({ status: false, message: "Password tidak boleh kurang dari 8 karakter" })
                 return
             }
             if (formdata?.password !== formdata?.confirm_password) {
-                setLoading({ loading: false, message: "Password tidak sama" })
+                setLoading({ status: false, message: "Password tidak sama" })
                 return
             }
             const payload = {
@@ -31,7 +31,7 @@ export default function ForgetPass() {
                 text: "Berhasil Mengirimkan Kode",
                 icon: "success"
             })
-            setLoading({loading: false})
+            setLoading({status: false})
             navigate.push(`login`)
         } catch (error) {
             console.log(error);
