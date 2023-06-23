@@ -4,6 +4,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import React, { Fragment, useEffect, useState } from 'react'
+import Swal from 'sweetalert2'
 
 export default function Login() {
     const [loading, setLoading] = useState<any>({
@@ -25,9 +26,17 @@ export default function Login() {
                 ...formdata
             }
             setLoading({ status: false })
+            Swal.fire({
+                text: "Berhasil Login",
+                icon: "success"
+            })
             navigate.push('main/dashboard')
         } catch (error) {
             console.log(error);
+            Swal.fire({
+                text: "Gagal Login",
+                icon: "error"
+            })
         }
     }
 
