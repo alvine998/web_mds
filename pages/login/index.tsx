@@ -1,10 +1,15 @@
 import { logo } from '@/assets'
+import firebase_app from '@/config/firebase'
+import { getAuth, signInWithEmailAndPassword } from 'firebase/auth'
 import Head from 'next/head'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import React, { Fragment, useEffect, useState } from 'react'
 import Swal from 'sweetalert2'
+
+const auth = getAuth(firebase_app);
+
 
 export default function Login() {
     const [loading, setLoading] = useState<any>({
@@ -22,9 +27,8 @@ export default function Login() {
             if (formdata?.password.length < 8) {
                 setLoading({ status: false, message: "Password tidak boleh kurang dari 8 karakter" })
                 return
-            } const payload = {
-                ...formdata
-            }
+            } 
+            const result = await signInWithEmailAndPassword(auth, formdata?.email, formdata?.password);
             setLoading({ status: false })
             Swal.fire({
                 text: "Berhasil Login",
@@ -32,6 +36,7 @@ export default function Login() {
             })
             navigate.push('main/dashboard')
         } catch (error) {
+            setLoading({ status: false })
             console.log(error);
             Swal.fire({
                 text: "Gagal Login",
