@@ -3,35 +3,25 @@ import Layout from '@/components/Layout'
 import Modal from '@/components/Modal'
 import { CONFIG } from '@/config'
 import axios from 'axios'
-import { ExclamationTriangleIcon } from '@heroicons/react/24/outline'
-import { Dialog, Transition } from '@headlessui/react'
-import { getAuth, createUserWithEmailAndPassword } from 'firebase/auth'
-import { addDoc, collection, endAt, getDocs, orderBy, query, startAt, where } from 'firebase/firestore'
 
 import React, { Fragment, useEffect, useState } from 'react'
-import firebase_app, { db } from '@/config/firebase'
 import Input from '@/components/Input'
 import Swal from 'sweetalert2'
 import DataTable from 'react-data-table-component'
 import { useRouter } from 'next/router'
 
-const auth = getAuth(firebase_app);
-
 export const getServerSideProps = async (context: any) => {
     try {
-        let { search }: { search: any } = context.query
-        const collection_ref = collection(db, "users")
-        const q = query(
-            collection_ref,
-            orderBy('email'),
-            startAt(search),
-            endAt(search + '\uf8ff')
-        )
-        const users = await getDocs(q)
-        console.log(search);
+        let { search } = context.query
+        const result = await axios.get(process.env.URL_API + `/users?search=${search || ""}`, {
+            headers: {
+                'bearer-token': 'serversalesproperties2023'
+            }
+        })
         return {
             props: {
-                users: users.docs.map((doc: any) => doc.data()) || [],
+                users: result?.data?.items || [],
+                uri: process.env.URL_API
             }
         }
     } catch (error) {
@@ -39,7 +29,7 @@ export const getServerSideProps = async (context: any) => {
     }
 }
 
-export default function Dashboard({ users }: { users: any }) {
+export default function Dashboard({ users, uri }: { users: any, uri: string }) {
     const [modal, setModal] = useState({
         open: false,
         data: null,
@@ -48,24 +38,28 @@ export default function Dashboard({ users }: { users: any }) {
     const [info, setInfo] = useState('')
     const router: any = useRouter();
     const [filter, setFilter] = useState<any>(router.query)
+    const [showTable, setShowTable] = useState<boolean>(false);
 
     const save = async (e: any) => {
         e?.preventDefault();
         const formdata: any = Object.fromEntries(new FormData(e.target))
         try {
             const payload = {
-                ...formdata,
+                ...formdata
             }
-            const result = await createUserWithEmailAndPassword(auth, formdata?.email, formdata?.password);
-            if (result) {
-                const addRef = await addDoc(collection(db, "users"), payload)
-                Swal.fire({
-                    text: "Berhasil Simpan Data",
-                    icon: "success"
-                })
-            }
+            const result = await axios.post(CONFIG.base_url.api + '/user', payload, {
+                headers: {
+                    'bearer-token': 'serversalesproperties2023'
+                }
+            })
+            setModal({ ...modal, open: false, data: null })
+            Swal.fire({
+                text: "Berhasil Simpan Data",
+                icon: "success"
+            })
+            router.push('user')
         } catch (error: any) {
-            console.log(error.message);
+            console.log(error);
             setInfo(error.message)
             Swal.fire({
                 text: "Gagal Simpan Data",
@@ -77,7 +71,7 @@ export default function Dashboard({ users }: { users: any }) {
     const columns = [
         {
             name: "Nama",
-            selector: (row: any) => row?.nama
+            selector: (row: any) => row?.name
         },
         {
             name: "Email",
@@ -86,6 +80,10 @@ export default function Dashboard({ users }: { users: any }) {
         {
             name: "No HP",
             selector: (row: any) => row?.phone
+        },
+        {
+            name: "Peran",
+            selector: (row: any) => row?.role?.replace("_", " ")
         },
         {
             name: "Aksi",
@@ -101,10 +99,26 @@ export default function Dashboard({ users }: { users: any }) {
         },
     ]
 
+    const valueRadio = [
+        { value: 'admin', label: "Admin" },
+        { value: 'super_admin', label: "Super Admin" }
+    ]
+
     useEffect(() => {
+        if (window !== undefined) {
+            setShowTable(true)
+        }
+    }, [])
+
+    useEffect(() => {
+        if (info) {
+            setTimeout(() => {
+                setInfo('')
+            }, 3000);
+        }
         const queryFilter = new URLSearchParams(filter).toString();
         router.push(`?${queryFilter}`)
-    }, [filter])
+    }, [info, filter])
 
     return (
         <Fragment>
@@ -117,40 +131,56 @@ export default function Dashboard({ users }: { users: any }) {
                                 setModal({ ...modal, open: true, data: null, key: "create" })
                             }} label='Buat User' />
                         </div>
-                        <Input placeholder='Cari' name='search' defaultValue={filter?.search || ""} onChange={(e: any) => setFilter({ ...filter, search: e?.target?.value })} />
+                        <Input placeholder='Cari' name='search' defaultValue={filter?.search || ""} onChange={(e: any) => { setFilter({ ...filter, search: e.target.value }) }} />
                     </div>
                     <div className='mt-2'>
-                        <DataTable
-                            columns={columns}
-                            data={users}
-                            pagination={true}
-                            selectableRows
-                        />
+                        {
+                            showTable ?
+                                <DataTable
+                                    columns={columns}
+                                    data={users}
+                                    pagination={true}
+                                    selectableRows
+                                /> : ""
+                        }
                     </div>
                     {
                         modal.key == "create" ?
                             <Modal open={modal.open} setOpen={() => { setModal({ ...modal, open: false }) }}>
                                 <>
                                     <form onSubmit={save} className='p-4'>
-                                        <Input label='Nama' placeholder='Masukkan Nama' name='nama' />
-                                        <Input label='No Hp' placeholder='Masukkan No Hp' name='phone' />
-                                        <Input label='Email' placeholder='Masukkan Email' name='email' />
-                                        <Input label='Password' placeholder='Masukkan Password' name='password' />
+                                        <Input required label='Nama' placeholder='Masukkan Nama' name='name' />
+                                        <Input required label='No Hp' placeholder='Masukkan No Hp' name='phone' />
+                                        <Input required label='Email' placeholder='Masukkan Email' name='email' />
+                                        <Input required label='Password' placeholder='Masukkan Password' type='password' name='password' />
+                                        <div className='mt-3'>
+                                            <label htmlFor="radio1">Peran</label>
+                                            <div className='flex gap-2'>
+                                                {
+                                                    valueRadio?.map((v: any) => (
+                                                        <div key={v?.value} className='flex gap-2'>
+                                                            <input required type='radio' value={v?.value} defaultChecked={v?.value == valueRadio[0]?.value} name='role' id='radio1' />
+                                                            <span>{v?.label}</span>
+                                                        </div>
+                                                    ))
+                                                }
+                                            </div>
+                                        </div>
                                         <p className='text-red-500 my-3'>
                                             {info}
                                         </p>
                                         <div className="bg-gray-50 w-full gap-2 py-3 sm:flex">
-                                            <button
-                                                className="mt-3 w-full justify-center rounded-md bg-green-500 px-3 py-2 text-sm font-semibold text-white shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-green-600 sm:mt-0"
-                                            >
-                                                Simpan
-                                            </button>
                                             <button
                                                 type="button"
                                                 className="mt-3 w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:mt-0"
                                                 onClick={() => setModal({ ...modal, open: false })}
                                             >
                                                 Cancel
+                                            </button>
+                                            <button
+                                                className="mt-3 w-full justify-center rounded-md bg-green-500 px-3 py-2 text-sm font-semibold text-white shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-green-600 sm:mt-0"
+                                            >
+                                                Simpan
                                             </button>
                                         </div>
                                     </form>
