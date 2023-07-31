@@ -22,9 +22,9 @@ export default function Sidebar() {
             active: route?.pathname?.includes('user')
         },
         {
-            name: "Pelanggan",
-            href: "customers",
-            active: route?.pathname?.includes('customers')
+            name: "Data Pelanggan",
+            href: "customer",
+            active: route?.pathname?.includes('customer')
         },
         {
             name: "Pengaturan",

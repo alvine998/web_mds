@@ -1,5 +1,7 @@
 import { logo } from '@/assets'
+import { CONFIG } from '@/config'
 import firebase_app from '@/config/firebase'
+import axios from 'axios'
 import { getAuth, signInWithEmailAndPassword } from 'firebase/auth'
 import Head from 'next/head'
 import Image from 'next/image'
@@ -27,14 +29,21 @@ export default function Login() {
             if (formdata?.password.length < 8) {
                 setLoading({ status: false, message: "Password tidak boleh kurang dari 8 karakter" })
                 return
-            } 
-            const result = await signInWithEmailAndPassword(auth, formdata?.email, formdata?.password);
+            }
+            const payload = {
+                ...formdata
+            }
+            const result = await axios.post(CONFIG.base_url.api + '/user/auth', payload, {
+                headers: {
+                    'bearer-token': 'serversalesproperties2023'
+                }
+            })
             setLoading({ status: false })
             Swal.fire({
                 text: "Berhasil Login",
                 icon: "success"
             })
-            navigate.push('main/dashboard')
+            navigate.push('/main/dashboard')
         } catch (error) {
             setLoading({ status: false })
             console.log(error);

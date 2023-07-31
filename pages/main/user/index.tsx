@@ -30,7 +30,7 @@ export const getServerSideProps = async (context: any) => {
 }
 
 export default function Dashboard({ users, uri }: { users: any, uri: string }) {
-    const [modal, setModal] = useState({
+    const [modal, setModal] = useState<any>({
         open: false,
         data: null,
         key: ""
@@ -45,13 +45,26 @@ export default function Dashboard({ users, uri }: { users: any, uri: string }) {
         const formdata: any = Object.fromEntries(new FormData(e.target))
         try {
             const payload = {
-                ...formdata
+                ...formdata,
+                password: formdata?.password ? formdata?.password : modal?.data?.password
             }
-            const result = await axios.post(CONFIG.base_url.api + '/user', payload, {
-                headers: {
-                    'bearer-token': 'serversalesproperties2023'
-                }
-            })
+
+            let url: any = null
+            if (modal?.key == 'create') {
+                url = axios.post(CONFIG.base_url.api + '/user', payload, {
+                    headers: {
+                        'bearer-token': 'serversalesproperties2023'
+                    }
+                })
+            } else {
+                url = axios.patch(CONFIG.base_url.api + '/user', payload, {
+                    headers: {
+                        'bearer-token': 'serversalesproperties2023'
+                    }
+                })
+            }
+
+            const result = await url
             setModal({ ...modal, open: false, data: null })
             Swal.fire({
                 text: "Berhasil Simpan Data",
@@ -61,38 +74,59 @@ export default function Dashboard({ users, uri }: { users: any, uri: string }) {
         } catch (error: any) {
             console.log(error);
             setInfo(error.message)
-            Swal.fire({
-                text: "Gagal Simpan Data",
-                icon: "error"
-            })
         }
     }
 
-    const columns = [
+    const remove = async (e: any) => {
+        e?.preventDefault();
+        const formdata: any = Object.fromEntries(new FormData(e.target))
+        try {
+            const result = await axios.delete(CONFIG.base_url.api + `/user?id=${formdata?.id}`, {
+                headers: {
+                    'bearer-token': 'serversalesproperties2023'
+                }
+            })
+            setModal({ ...modal, open: false, data: null })
+            Swal.fire({
+                text: "Berhasil Hapus Data",
+                icon: "success"
+            })
+            router.push('user')
+        } catch (error: any) {
+            console.log(error);
+            setInfo(error.message)
+        }
+    }
+
+    const columns: any = [
         {
             name: "Nama",
-            selector: (row: any) => row?.name
+            selector: (row: Users) => row?.name
         },
         {
             name: "Email",
-            selector: (row: any) => row?.email
+            selector: (row: Users) => row?.email
         },
         {
             name: "No HP",
-            selector: (row: any) => row?.phone
+            selector: (row: Users) => row?.phone
         },
         {
             name: "Peran",
-            selector: (row: any) => row?.role?.replace("_", " ")
+            selector: (row: Users) => row?.role?.replace("_", " ")
         },
         {
             name: "Aksi",
-            selector: (row: any) => <>
-                <button className='text-green-500'>
+            selector: (row: Users) => <>
+                <button onClick={() => {
+                    setModal({ ...modal, open: true, data: row, key: "update" })
+                }} className='text-green-500'>
                     Edit
                 </button>
                 &nbsp;
-                <button className='text-red-500 ml-2'>
+                <button onClick={() => {
+                    setModal({ ...modal, open: true, data: row, key: "delete" })
+                }} className='text-red-500 ml-2'>
                     Hapus
                 </button>
             </>
@@ -145,21 +179,22 @@ export default function Dashboard({ users, uri }: { users: any, uri: string }) {
                         }
                     </div>
                     {
-                        modal.key == "create" ?
+                        modal.key == "create" || modal.key == "update" ?
                             <Modal open={modal.open} setOpen={() => { setModal({ ...modal, open: false }) }}>
                                 <>
                                     <form onSubmit={save} className='p-4'>
-                                        <Input required label='Nama' placeholder='Masukkan Nama' name='name' />
-                                        <Input required label='No Hp' placeholder='Masukkan No Hp' name='phone' />
-                                        <Input required label='Email' placeholder='Masukkan Email' name='email' />
+                                        <Input required defaultValue={modal?.data?.name || ""} label='Nama' placeholder='Masukkan Nama' name='name' />
+                                        <Input required defaultValue={modal?.data?.phone || ""} label='No Hp' placeholder='Masukkan No Hp' name='phone' />
+                                        <Input required defaultValue={modal?.data?.email || ""} label='Email' placeholder='Masukkan Email' name='email' />
                                         <Input required label='Password' placeholder='Masukkan Password' type='password' name='password' />
+                                        <input name='id' value={modal?.data?.id || ""} className='hidden' />
                                         <div className='mt-3'>
                                             <label htmlFor="radio1">Peran</label>
                                             <div className='flex gap-2'>
                                                 {
                                                     valueRadio?.map((v: any) => (
                                                         <div key={v?.value} className='flex gap-2'>
-                                                            <input required type='radio' value={v?.value} defaultChecked={v?.value == valueRadio[0]?.value} name='role' id='radio1' />
+                                                            <input required type='radio' value={v?.value} defaultChecked={v?.value == valueRadio[0]?.value || v?.value == modal?.data?.role} name='role' id='radio1' />
                                                             <span>{v?.label}</span>
                                                         </div>
                                                     ))
@@ -181,6 +216,35 @@ export default function Dashboard({ users, uri }: { users: any, uri: string }) {
                                                 className="mt-3 w-full justify-center rounded-md bg-green-500 px-3 py-2 text-sm font-semibold text-white shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-green-600 sm:mt-0"
                                             >
                                                 Simpan
+                                            </button>
+                                        </div>
+                                    </form>
+                                </>
+                            </Modal> : ""
+                    }
+                    {
+                        modal.key == "delete" ?
+                            <Modal open={modal.open} setOpen={() => { setModal({ ...modal, open: false }) }}>
+                                <>
+                                    <form onSubmit={remove} className='p-4'>
+                                        <h1 className='text-lg text-center font-sans font-bold my-2'>Hapus Data</h1>
+                                        <p className='text-center'>Anda yakin ingin menghapus {modal?.data?.name}?</p>
+                                        <p className='text-red-500 my-3'>
+                                            {info}
+                                        </p>
+                                        <input className='hidden' name='id' value={modal.data.id} />
+                                        <div className="bg-gray-50 w-full gap-2 py-3 sm:flex">
+                                            <button
+                                                type="button"
+                                                className="mt-3 w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:mt-0"
+                                                onClick={() => setModal({ ...modal, open: false })}
+                                            >
+                                                Cancel
+                                            </button>
+                                            <button
+                                                className="mt-3 w-full justify-center rounded-md bg-red-500 px-3 py-2 text-sm font-semibold text-white shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-red-600 sm:mt-0"
+                                            >
+                                                Hapus
                                             </button>
                                         </div>
                                     </form>

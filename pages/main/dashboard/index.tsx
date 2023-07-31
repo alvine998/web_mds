@@ -9,26 +9,25 @@ Chart.register(ArcElement, Tooltip, Legend, ...registerables)
 
 export const getServerSideProps = async (context: any) => {
   try {
-    // const [users, customers, apps] = await Promise.all([
-    //   await axios.get(CONFIG.base_url.api + `/users`, {
-    //     headers: {
-    //       'bearer-token': 'serversalesproperties2023',
-    //       'x-app-id': 'id.app.midland'
-    //     }
-    //   }),
-    //   await axios.get(CONFIG.base_url.api + `/customers`, {
-    //     headers: {
-    //       'bearer-token': 'serversalesproperties2023',
-    //       'x-app-id': 'id.app.midland'
-    //     }
-    //   }),
-    //   await axios.get(CONFIG.base_url.api + `/apps`, {
-    //     headers: { 'bearer-token': 'serversalesproperties2023' }
-    //   }),
-    // ])
+    const [users] = await Promise.all([
+      await axios.get(CONFIG.base_url.api + `/users`, {
+        headers: {
+          'bearer-token': 'serversalesproperties2023'
+        }
+      })
+      // await axios.get(CONFIG.base_url.api + `/customers`, {
+      //   headers: {
+      //     'bearer-token': 'serversalesproperties2023',
+      //     'x-app-id': 'id.app.midland'
+      //   }
+      // }),
+      // await axios.get(CONFIG.base_url.api + `/apps`, {
+      //   headers: { 'bearer-token': 'serversalesproperties2023' }
+      // }),
+    ])
     return {
       props: {
-        // users: users?.data?.items || null,
+        users: users?.data || null,
         // customers: customers?.data?.items || null,
         // apps: apps?.data?.items || null
       }
@@ -38,15 +37,18 @@ export const getServerSideProps = async (context: any) => {
   }
 }
 
-export default function Dashboard({users, apps, customers}: {users: any, apps: any, customers: any}) {
+export default function Dashboard({ users, apps, customers }: { users: any, apps: any, customers: any }) {
   const data = {
     labels: ['User', 'Customer'],
     datasets: [
       {
-        label: "Example Data",
-        data: [users?.length || 0, customers?.length || 0],
+        label: "Data Users",
+        data: [
+          users?.total_items || 0,
+          5
+        ],
         fill: false,
-        borderColor: 'rgba(75,192,192,1)'
+        borderColor: ['rgba(75,192,192,1)', 'rgba(75,192,152,1)']
       }
     ]
   }
