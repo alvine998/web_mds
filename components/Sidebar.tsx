@@ -27,6 +27,11 @@ export default function Sidebar() {
             active: route?.pathname?.includes('customer')
         },
         {
+            name: "Data Apps",
+            href: "apps",
+            active: route?.pathname?.includes('apps')
+        },
+        {
             name: "Pengaturan",
             href: "setting",
             active: route?.pathname?.includes('setting'),

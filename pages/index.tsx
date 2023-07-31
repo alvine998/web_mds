@@ -66,6 +66,7 @@ export default function Home() {
     <Fragment>
       <Head>
         <title>Kirim Sekarang</title>
+        <link rel="shortcut icon" href="/favicon.ico" />
       </Head>
       <div className='bg-blue-200 p-2 w-[600px] md:h-[70vh] h-[100vh] mx-auto my-20 rounded-lg'>
         <div>
